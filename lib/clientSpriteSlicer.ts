@@ -1,6 +1,6 @@
 // Browser-only. Slices a user-uploaded sprite sheet into a grid atlas without any AI call.
 import type { AtlasJson, GenerateSpriteResponse } from "./types";
-import { buildAtlas, chromaKeyDistance, hexToRgb, CHROMA_TOLERANCE } from "./spriteGrid";
+import { buildAtlas, chromaKeyDistance, chromaKeyAlpha, despeckleAlpha, hexToRgb } from "./spriteGrid";
 
 export interface SliceUploadedImageParams {
   image: Blob;
@@ -138,10 +138,9 @@ export async function sliceUploadedImage({
     const [kr, kg, kb] = hexToRgb(chromaKeyHex);
     for (let i = 0; i < data.length; i += 4) {
       const dist = chromaKeyDistance(data[i], data[i + 1], data[i + 2], kr, kg, kb);
-      if (dist < CHROMA_TOLERANCE) {
-        data[i + 3] = 0;
-      }
+      data[i + 3] = chromaKeyAlpha(dist);
     }
+    despeckleAlpha(data, canvas.width, canvas.height);
     ctx.putImageData(imageData, 0, 0);
     canvas = alignFramesToSharedAnchor(canvas, atlas);
   }

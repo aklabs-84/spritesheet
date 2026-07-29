@@ -12,8 +12,12 @@ export function hexToRgb(hex: string): [number, number, number] {
 }
 
 export const CHROMA_TOLERANCE = 60;
+/** Distance band beyond CHROMA_TOLERANCE over which alpha ramps 0 -> 255 instead of
+ * snapping instantly, so anti-aliased edge pixels fade out instead of leaving a
+ * hard-edged halo of near-background-colored pixels around the character. */
+export const CHROMA_FEATHER = 40;
 
-/** Euclidean RGB distance; caller decides what to do when it's within tolerance. */
+/** Euclidean RGB distance from the chroma-key color. */
 export function chromaKeyDistance(
   r: number,
   g: number,
@@ -23,6 +27,61 @@ export function chromaKeyDistance(
   kb: number,
 ): number {
   return Math.sqrt((r - kr) ** 2 + (g - kg) ** 2 + (b - kb) ** 2);
+}
+
+/** Maps chroma-key distance to an alpha value (0 = fully keyed out, 255 = fully opaque). */
+export function chromaKeyAlpha(distance: number): number {
+  if (distance <= CHROMA_TOLERANCE) return 0;
+  if (distance >= CHROMA_TOLERANCE + CHROMA_FEATHER) return 255;
+  return Math.round(((distance - CHROMA_TOLERANCE) / CHROMA_FEATHER) * 255);
+}
+
+/**
+ * Chroma-keying a busy/gradient-heavy background (common in AI-generated art) leaves
+ * scattered single-pixel specks that dodge the threshold in one direction or the other.
+ * Removes any opaque region not connected to a large enough blob — real character
+ * silhouettes are always much bigger than stray noise pixels.
+ */
+export function despeckleAlpha(
+  data: Uint8ClampedArray,
+  width: number,
+  height: number,
+  minIslandSize = 8,
+) {
+  const total = width * height;
+  const visited = new Uint8Array(total);
+  const stack: number[] = [];
+
+  for (let start = 0; start < total; start++) {
+    if (visited[start] || data[start * 4 + 3] === 0) continue;
+
+    const island: number[] = [];
+    visited[start] = 1;
+    stack.push(start);
+    while (stack.length > 0) {
+      const idx = stack.pop()!;
+      island.push(idx);
+      const x = idx % width;
+      const y = (idx / width) | 0;
+      const neighbors = [];
+      if (x > 0) neighbors.push(idx - 1);
+      if (x < width - 1) neighbors.push(idx + 1);
+      if (y > 0) neighbors.push(idx - width);
+      if (y < height - 1) neighbors.push(idx + width);
+      for (const n of neighbors) {
+        if (!visited[n] && data[n * 4 + 3] !== 0) {
+          visited[n] = 1;
+          stack.push(n);
+        }
+      }
+    }
+
+    if (island.length < minIslandSize) {
+      for (const idx of island) {
+        data[idx * 4 + 3] = 0;
+      }
+    }
+  }
 }
 
 export interface BuildAtlasParams {

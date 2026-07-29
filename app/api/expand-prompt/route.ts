@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const instructions = buildExpansionInstructions(body);
+  const instructions = buildExpansionInstructions(body, provider === "openai");
 
   try {
     const expandedPrompt =

@@ -62,6 +62,10 @@ export async function openaiGenerateImage(
       model: IMAGE_MODEL,
       prompt,
       size: pickImageSize(rows, cols),
+      // gpt-image-1 renders true alpha transparency instead of a keyable
+      // background color, so no chroma-key post-processing is needed.
+      background: "transparent",
+      output_format: "png",
     }),
   });
 
