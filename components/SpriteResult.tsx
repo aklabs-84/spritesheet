@@ -53,10 +53,7 @@ export function SpriteResult({ image, atlas }: Props) {
         </button>
       </div>
 
-      <IntegrationGuide
-        animationName={atlas.animations[0]?.name ?? "animation"}
-        frameRate={atlas.animations[0]?.frameRate ?? 8}
-      />
+      <IntegrationGuide image={image} atlas={atlas} />
     </div>
   );
 }

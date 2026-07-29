@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ApiKeySettings } from "@/components/ApiKeySettings";
 import { GenerationForm } from "@/components/GenerationForm";
 import { PromptPreview } from "@/components/PromptPreview";
@@ -30,6 +30,8 @@ export default function Home() {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [rawSheetImage, setRawSheetImage] = useState<string | null>(null);
   const [result, setResult] = useState<GenerateSpriteResponse | null>(null);
+
+  const rawSheetBlob = useMemo(() => (rawSheetImage ? dataUrlToBlob(rawSheetImage) : null), [rawSheetImage]);
 
   const [expanding, setExpanding] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
@@ -184,7 +186,7 @@ export default function Home() {
                   previewImage={previewImage}
                 />
               )}
-              {aiStep === "slice" && rawSheetImage && formValues && (
+              {aiStep === "slice" && rawSheetBlob && formValues && (
                 <div className="game-panel space-y-4 p-5">
                   <div className="flex items-center justify-between">
                     <span className="game-label">생성된 시트 이미지 확인 후 애니메이션 설정</span>
@@ -196,15 +198,8 @@ export default function Home() {
                       프롬프트로 돌아가기
                     </button>
                   </div>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={rawSheetImage}
-                    alt="생성된 시트 이미지"
-                    className="max-h-56 rounded border border-[var(--panel-border)]"
-                    style={{ imageRendering: "pixelated" }}
-                  />
                   <SliceForm
-                    image={dataUrlToBlob(rawSheetImage)}
+                    image={rawSheetBlob}
                     onResult={handleSliceResult}
                     defaultAnimationName={formValues.motion}
                     defaultRows={formValues.rows}

@@ -10,13 +10,9 @@ interface Props {
 
 export function UploadForm({ onResult }: Props) {
   const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0] ?? null;
-    setFile(f);
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(f ? URL.createObjectURL(f) : null);
+    setFile(e.target.files?.[0] ?? null);
   }
 
   return (
@@ -36,15 +32,6 @@ export function UploadForm({ onResult }: Props) {
           onChange={handleFileChange}
           className="w-full text-sm text-[var(--muted)] file:mr-3 file:rounded file:border-0 file:bg-[var(--accent-cyan)] file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-black"
         />
-        {previewUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={previewUrl}
-            alt="업로드 미리보기"
-            className="mt-2 max-h-40 rounded border border-[var(--panel-border)]"
-            style={{ imageRendering: "pixelated" }}
-          />
-        )}
       </div>
 
       {file && <SliceForm image={file} onResult={onResult} />}

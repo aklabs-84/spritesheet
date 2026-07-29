@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import type { AtlasJson } from "@/lib/types";
+import { downloadBlob } from "@/lib/download";
+import { buildStandaloneHtmlPreview } from "@/lib/standaloneHtml";
 
 interface Props {
-  animationName: string;
-  frameRate: number;
+  image: string;
+  atlas: AtlasJson;
 }
 
 function CodeBlock({ code }: { code: string }) {
@@ -32,8 +35,15 @@ function CodeBlock({ code }: { code: string }) {
   );
 }
 
-export function IntegrationGuide({ animationName, frameRate }: Props) {
+export function IntegrationGuide({ image, atlas }: Props) {
   const [open, setOpen] = useState(false);
+  const animationName = atlas.animations[0]?.name ?? "animation";
+  const frameRate = atlas.animations[0]?.frameRate ?? 8;
+
+  function handleDownloadPreview() {
+    const html = buildStandaloneHtmlPreview(image, atlas);
+    downloadBlob(new Blob([html], { type: "text/html" }), `${animationName}-preview.html`);
+  }
 
   const phaserCode = `// preload()
 this.load.atlas('${animationName}', 'sprite-sheet.png', 'sprite-sheet.json');
@@ -62,9 +72,23 @@ setInterval(() => {
 }, 1000 / anim.frameRate);`;
 
   return (
-    <div className="space-y-2 border-t border-[var(--panel-border)] pt-3">
-      <button type="button" onClick={() => setOpen((v) => !v)} className="game-label flex w-full items-center justify-between">
-        <span>이 파일을 내 프로젝트에 적용하는 법</span>
+    <div className="space-y-3 border-t border-[var(--panel-border)] pt-3">
+      <div className="space-y-1">
+        <p className="game-label">내 프로젝트에 적용하기</p>
+        <p className="text-xs text-[var(--muted)]">
+          아래 파일을 다운로드해서 더블클릭하면, 코드를 몰라도 브라우저에서 바로 애니메이션을 확인할 수 있어요.
+        </p>
+      </div>
+      <button type="button" onClick={handleDownloadPreview} className="game-button w-full">
+        코드 없이 바로 확인하기 (HTML 다운로드)
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="game-label flex w-full items-center justify-between pt-1"
+      >
+        <span>개발자용 코드 보기 (Phaser 3 / 순수 Canvas)</span>
         <span>{open ? "▲" : "▼"}</span>
       </button>
       {open && (

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { sliceUploadedImage } from "@/lib/clientSpriteSlicer";
+import { GridPreview } from "./GridPreview";
 import type { GenerateSpriteResponse } from "@/lib/types";
 
 interface Props {
@@ -63,6 +64,13 @@ export function SliceForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-1">
+        <p className="game-label">
+          격자 미리보기 — 아래 행/열 값을 캐릭터 칸 경계에 맞춰보세요
+        </p>
+        <GridPreview image={image} rows={rows} cols={cols} />
+      </div>
+
       <div>
         <label className="game-label mb-1 block" htmlFor="animation-name">
           애니메이션 이름
