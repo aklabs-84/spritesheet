@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MOTION_LABELS } from "@/lib/promptTemplates";
+import { MOTION_LABELS, buildGuidePrompt } from "@/lib/promptTemplates";
 import type { ExpandPromptRequest, MotionPreset } from "@/lib/types";
 
 interface Props {
@@ -16,8 +16,18 @@ export function GenerationForm({ onSubmit, submitting }: Props) {
   const [rows, setRows] = useState(2);
   const [cols, setCols] = useState(4);
   const [pingPong, setPingPong] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const cellsMismatch = rows * cols !== frameCount;
+  const guidePrompt = roughDescription.trim()
+    ? buildGuidePrompt({ roughDescription, motion, frameCount, rows, cols, pingPong })
+    : "";
+
+  async function handleCopyGuidePrompt() {
+    await navigator.clipboard.writeText(guidePrompt);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
 
   return (
     <form
@@ -124,6 +134,20 @@ export function GenerationForm({ onSubmit, submitting }: Props) {
           자연스러운 루프 (ping-pong)
         </label>
       </div>
+
+      {guidePrompt && (
+        <div className="space-y-2 rounded border border-[var(--panel-border)] p-3">
+          <div className="flex items-center justify-between">
+            <span className="game-label">가이드 프롬프트 (API 키 불필요, 외부 AI에 붙여넣기)</span>
+            <button type="button" onClick={handleCopyGuidePrompt} className="game-button-ghost text-xs">
+              {copied ? "복사됨!" : "복사하기"}
+            </button>
+          </div>
+          <p className="whitespace-pre-wrap rounded bg-black/20 p-2 font-mono text-xs text-[var(--muted)]">
+            {guidePrompt}
+          </p>
+        </div>
+      )}
 
       <button type="submit" disabled={submitting} className="game-button w-full">
         {submitting ? "프롬프트 생성 중..." : "프롬프트 생성"}

@@ -1,6 +1,5 @@
 // Isomorphic (server + browser) grid math and chroma-key pixel test.
-// No Node-only or DOM-only APIs here so both lib/imageProcessing.ts (sharp)
-// and lib/clientSpriteSlicer.ts (canvas) can share the same logic.
+// No Node-only or DOM-only APIs here — lib/clientSpriteSlicer.ts (canvas) uses it.
 import type { AtlasJson } from "./types";
 
 export function hexToRgb(hex: string): [number, number, number] {

@@ -4,19 +4,21 @@ import { useState } from "react";
 import { ApiKeySettings } from "@/components/ApiKeySettings";
 import { GenerationForm } from "@/components/GenerationForm";
 import { PromptPreview } from "@/components/PromptPreview";
+import { SliceForm } from "@/components/SliceForm";
 import { SpriteResult } from "@/components/SpriteResult";
 import { UploadForm } from "@/components/UploadForm";
 import { useApiKey } from "@/lib/apiKeyStorage";
-import { DEFAULT_CHROMA_KEY } from "@/lib/promptTemplates";
+import { dataUrlToBlob } from "@/lib/download";
 import type {
   ApiErrorResponse,
   ExpandPromptRequest,
   ExpandPromptResponse,
+  GenerateImageResponse,
   GenerateSpriteResponse,
 } from "@/lib/types";
 
 type Mode = "ai" | "upload";
-type AiStep = "form" | "prompt";
+type AiStep = "form" | "prompt" | "slice";
 
 export default function Home() {
   const { provider, activeKey } = useApiKey();
@@ -25,10 +27,13 @@ export default function Home() {
   const [aiStep, setAiStep] = useState<AiStep>("form");
   const [formValues, setFormValues] = useState<ExpandPromptRequest | null>(null);
   const [prompt, setPrompt] = useState("");
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [rawSheetImage, setRawSheetImage] = useState<string | null>(null);
   const [result, setResult] = useState<GenerateSpriteResponse | null>(null);
 
   const [expanding, setExpanding] = useState(false);
-  const [generating, setGenerating] = useState(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
+  const [generatingSheet, setGeneratingSheet] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function callApi<T>(path: string, body: unknown): Promise<T> {
@@ -80,32 +85,48 @@ export default function Home() {
     }
   }
 
-  async function handleGenerate() {
-    if (!formValues) return;
+  async function handleGenerateImage() {
     setError(null);
-    setGenerating(true);
+    setGeneratingImage(true);
     try {
-      const response = await callApi<GenerateSpriteResponse>("/api/generate-sprite", {
-        prompt,
-        rows: formValues.rows,
-        cols: formValues.cols,
-        frameCount: formValues.frameCount,
-        chromaKey: DEFAULT_CHROMA_KEY,
-        animationName: formValues.motion,
-        pingPong: formValues.pingPong,
-      });
-      setResult(response);
+      const response = await callApi<GenerateImageResponse>("/api/generate-image", { prompt });
+      setPreviewImage(response.image);
     } catch (e) {
       setError(e instanceof Error ? e.message : "알 수 없는 오류");
     } finally {
-      setGenerating(false);
+      setGeneratingImage(false);
     }
+  }
+
+  async function handleGenerateSheet() {
+    if (!formValues) return;
+    setError(null);
+    setGeneratingSheet(true);
+    try {
+      const response = await callApi<GenerateImageResponse>("/api/generate-image", {
+        prompt,
+        rows: formValues.rows,
+        cols: formValues.cols,
+      });
+      setRawSheetImage(response.image);
+      setAiStep("slice");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "알 수 없는 오류");
+    } finally {
+      setGeneratingSheet(false);
+    }
+  }
+
+  function handleSliceResult(response: GenerateSpriteResponse) {
+    setResult(response);
   }
 
   function handleReset() {
     setAiStep("form");
     setResult(null);
     setPrompt("");
+    setPreviewImage(null);
+    setRawSheetImage(null);
     setError(null);
   }
 
@@ -113,6 +134,8 @@ export default function Home() {
     if (next === mode) return;
     setMode(next);
     setResult(null);
+    setPreviewImage(null);
+    setRawSheetImage(null);
     setError(null);
     setAiStep("form");
   }
@@ -153,10 +176,43 @@ export default function Home() {
                   prompt={prompt}
                   onChange={setPrompt}
                   onRegenerate={handleRegenerate}
-                  onGenerate={handleGenerate}
+                  onGenerateImage={handleGenerateImage}
+                  onGenerateSheet={handleGenerateSheet}
                   regenerating={expanding}
-                  generating={generating}
+                  generatingImage={generatingImage}
+                  generatingSheet={generatingSheet}
+                  previewImage={previewImage}
                 />
+              )}
+              {aiStep === "slice" && rawSheetImage && formValues && (
+                <div className="game-panel space-y-4 p-5">
+                  <div className="flex items-center justify-between">
+                    <span className="game-label">생성된 시트 이미지 확인 후 애니메이션 설정</span>
+                    <button
+                      type="button"
+                      onClick={() => setAiStep("prompt")}
+                      className="game-button-ghost text-xs"
+                    >
+                      프롬프트로 돌아가기
+                    </button>
+                  </div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={rawSheetImage}
+                    alt="생성된 시트 이미지"
+                    className="max-h-56 rounded border border-[var(--panel-border)]"
+                    style={{ imageRendering: "pixelated" }}
+                  />
+                  <SliceForm
+                    image={dataUrlToBlob(rawSheetImage)}
+                    onResult={handleSliceResult}
+                    defaultAnimationName={formValues.motion}
+                    defaultRows={formValues.rows}
+                    defaultCols={formValues.cols}
+                    defaultFrameCount={formValues.frameCount}
+                    submitLabel="애니메이션 만들기"
+                  />
+                </div>
               )}
             </>
           ) : (

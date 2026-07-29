@@ -21,15 +21,15 @@ export interface ExpandPromptResponse {
   expandedPrompt: string;
 }
 
-export interface GenerateSpriteRequest {
+export interface GenerateImageRequest {
   prompt: string;
-  rows: number;
-  cols: number;
-  frameCount: number;
-  chromaKey: string;
-  animationName?: string;
-  frameRate?: number;
-  pingPong?: boolean;
+  /** Used only to pick a sensible aspect ratio (OpenAI); defaults to a 1x1 square. */
+  rows?: number;
+  cols?: number;
+}
+
+export interface GenerateImageResponse {
+  image: string; // data:<mime>;base64,....
 }
 
 export interface AtlasFrame {

@@ -3,7 +3,7 @@ import type { AtlasJson, GenerateSpriteResponse } from "./types";
 import { buildAtlas, chromaKeyDistance, hexToRgb, CHROMA_TOLERANCE } from "./spriteGrid";
 
 export interface SliceUploadedImageParams {
-  file: File;
+  image: Blob;
   rows: number;
   cols: number;
   frameCount: number;
@@ -103,7 +103,7 @@ function alignFramesToSharedAnchor(sourceCanvas: HTMLCanvasElement, atlas: Atlas
 }
 
 export async function sliceUploadedImage({
-  file,
+  image,
   rows,
   cols,
   frameCount,
@@ -112,7 +112,7 @@ export async function sliceUploadedImage({
   chromaKeyHex,
   pingPong,
 }: SliceUploadedImageParams): Promise<GenerateSpriteResponse> {
-  const bitmap = await createImageBitmap(file);
+  const bitmap = await createImageBitmap(image);
   let canvas = document.createElement("canvas");
   canvas.width = bitmap.width;
   canvas.height = bitmap.height;
@@ -146,7 +146,7 @@ export async function sliceUploadedImage({
     canvas = alignFramesToSharedAnchor(canvas, atlas);
   }
 
-  const image = canvas.toDataURL("image/png");
+  const resultImage = canvas.toDataURL("image/png");
 
-  return { image, atlas };
+  return { image: resultImage, atlas };
 }

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import type { AtlasJson } from "@/lib/types";
+import { downloadBlob, dataUrlToBlob } from "@/lib/download";
+import { IntegrationGuide } from "./IntegrationGuide";
 
 const AnimationPreview = dynamic(() => import("./AnimationPreview"), {
   ssr: false,
@@ -17,24 +19,6 @@ const SheetGridPreview = dynamic(() => import("./SheetGridPreview"), {
 interface Props {
   image: string;
   atlas: AtlasJson;
-}
-
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function dataUrlToBlob(dataUrl: string): Blob {
-  const [meta, base64] = dataUrl.split(",");
-  const mime = meta.match(/data:(.*);base64/)?.[1] ?? "image/png";
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return new Blob([bytes], { type: mime });
 }
 
 export function SpriteResult({ image, atlas }: Props) {
@@ -68,6 +52,11 @@ export function SpriteResult({ image, atlas }: Props) {
           JSON 다운로드
         </button>
       </div>
+
+      <IntegrationGuide
+        animationName={atlas.animations[0]?.name ?? "animation"}
+        frameRate={atlas.animations[0]?.frameRate ?? 8}
+      />
     </div>
   );
 }
